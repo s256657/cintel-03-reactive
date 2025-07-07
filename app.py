@@ -5,6 +5,7 @@ import seaborn as sns
 from palmerpenguins import load_penguins
 import plotly.express as px
 from shinywidgets import output_widget, render_widget, render_plotly
+from shiny import reactive
 
 # Load and clean data
 penguins_df = load_penguins().dropna()
@@ -132,5 +133,11 @@ def server(input, output, session):
         )
         return fig
 
+@reactive.calc
+def filtered_data():
+    return penguins_df
+        
+
 # Run the app
 app = App(app_ui, server)
+
