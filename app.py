@@ -1,11 +1,10 @@
-from shiny import App, ui, render
+from shiny import App, ui, render, reactive
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 from palmerpenguins import load_penguins
 import plotly.express as px
 from shinywidgets import output_widget, render_widget, render_plotly
-from shiny import reactive
 
 # Load and clean data
 penguins_df = load_penguins().dropna()
@@ -43,7 +42,6 @@ app_ui = ui.page_sidebar(
         ui.output_data_frame("penguins_grid")
     ),
 
-    
     ui.layout_columns(
         ui.card(
             ui.card_header("Plotly Histogram"),
@@ -54,6 +52,7 @@ app_ui = ui.page_sidebar(
             ui.output_plot("seaborn_histogram")
         )
     ),
+
     ui.card(
         ui.card_header("Plotly Scatterplot"),
         output_widget("plotly_scatterplot"),
@@ -61,25 +60,27 @@ app_ui = ui.page_sidebar(
     )
 )
 
-# Server logic
+# Define Server Logic
 def server(input, output, session):
-    def filtered_df():
+    # Reactive filtered DataFrame based on selected species
+    @reactive.calc
+    def filtered_data():
         return penguins_df[penguins_df["species"].isin(input.selected_species_list())]
 
     @output
     @render.data_frame
     def data_table():
-        return filtered_df()
+        return filtered_data()
 
     @output
     @render.data_frame
     def penguins_grid():
-        return penguins_df  # Show full data grid (static)
+        return filtered_data()
 
     @output
     @render_plotly
     def plotly_histogram():
-        df = filtered_df()
+        df = filtered_data()
         fig = px.histogram(
             df,
             x=input.selected_attribute(),
@@ -96,7 +97,7 @@ def server(input, output, session):
     @output
     @render.plot
     def seaborn_histogram():
-        df = filtered_df()
+        df = filtered_data()
         plt.figure(figsize=(6, 4))
         sns.histplot(
             data=df,
@@ -112,13 +113,12 @@ def server(input, output, session):
     @output
     @render_plotly
     def plotly_scatterplot():
-        df = filtered_df()
+        df = filtered_data()
         selected_attr = input.selected_attribute()
-        
         fig = px.scatter(
             df,
-            x=selected_attr,              
-            y="body_mass_g",              
+            x=selected_attr,
+            y="body_mass_g",
             color="species",
             symbol="species",
             size="bill_length_mm",
@@ -133,11 +133,5 @@ def server(input, output, session):
         )
         return fig
 
-@reactive.calc
-def filtered_data():
-    return penguins_df
-        
-
 # Run the app
 app = App(app_ui, server)
-
