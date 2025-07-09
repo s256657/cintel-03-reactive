@@ -1,4 +1,4 @@
-from shiny import App, ui, render, reactive
+from shiny import App, ui, render, reactive, req
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -62,9 +62,11 @@ app_ui = ui.page_sidebar(
 
 # Define Server Logic
 def server(input, output, session):
+
     # Reactive filtered DataFrame based on selected species
     @reactive.calc
     def filtered_data():
+        req(input.selected_species_list())  # Ensure something is selected
         return penguins_df[penguins_df["species"].isin(input.selected_species_list())]
 
     @output
